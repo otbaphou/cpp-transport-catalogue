@@ -44,18 +44,14 @@ class TransportCatalogue
 	// Реализуйте класс самостоятельно
     public:
     
-    void AddBus(Bus& bus);
+    void AddBus(const Bus& bus);
+    void AddStop(const Stop& stop);
     
-    void AddStop(Stop& stop);
+    Bus* FindBus(const std::string_view key) const;
+    Stop* FindStop(const std::string_view key) const;
     
-    Bus* FindBus(const std::string_view& key);
-    Bus* FindBus(const std::string_view& key) const;
-    
-    Stop* FindStop(const std::string_view& key);
-    Stop* FindStop(const std::string_view& key) const;
-    
-    void GetRouteInfo(std::string_view route, std::ostream& output) const;
-    void GetStopInfo(std::string_view stop, std::ostream& output) const;
+    std::tuple<int, int, double> GetRouteInfo(std::string_view route) const;
+    std::pair<bool, std::set<std::string>> GetStopInfo(std::string_view stop) const;
     
     private:
     

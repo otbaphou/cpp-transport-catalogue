@@ -2,6 +2,7 @@
 
 #include <iosfwd>
 #include <string_view>
+#include <string>
 
 #include "transport_catalogue.h"
 

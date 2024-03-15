@@ -9,7 +9,7 @@ Stop::Stop(const std::string& name_, const geo::Coordinates& location_)
 :name(name_),
 location(location_){}
 
-void TransportCatalogue::AddBus(Bus& bus) 
+void TransportCatalogue::AddBus(const Bus& bus) 
 {
     routes_.push_back(std::move(bus));
     Bus& tmp = routes_.back();
@@ -17,39 +17,23 @@ void TransportCatalogue::AddBus(Bus& bus)
     busname_to_bus_.insert({tmp.name, &tmp});
 }
     
-void TransportCatalogue::AddStop(Stop& stop)
+void TransportCatalogue::AddStop(const Stop& stop)
 {
     stops_.push_back(std::move(stop));
     Stop& tmp = stops_.back();
     
     name_to_stops_.insert({tmp.name,  &tmp});
 }
-    
-Bus* TransportCatalogue::FindBus(const std::string_view& key)
-{
-    if (busname_to_bus_.contains(key))
-    return busname_to_bus_[key];
-    else
-    return nullptr;
-}
 
-Bus* TransportCatalogue::FindBus(const std::string_view& key) const
+Bus* TransportCatalogue::FindBus(const std::string_view key) const
 {
     if (busname_to_bus_.contains(key))
     return busname_to_bus_.at(key);
     else
     return nullptr;
 }
-    
-Stop* TransportCatalogue::FindStop(const std::string_view& key)
-{
-    if (name_to_stops_.contains(key))
-    return name_to_stops_[key];
-    else
-    return nullptr;
-}
 
-Stop* TransportCatalogue::FindStop(const std::string_view& key) const
+Stop* TransportCatalogue::FindStop(const std::string_view key) const
 {
     if (name_to_stops_.contains(key))
     return name_to_stops_.at(key);
@@ -57,15 +41,14 @@ Stop* TransportCatalogue::FindStop(const std::string_view& key) const
     return nullptr;
 }
     
-void TransportCatalogue::GetRouteInfo(std::string_view route, std::ostream& output) const
+std::tuple<int, int, double> TransportCatalogue::GetRouteInfo(std::string_view route) const
 {
-    output << "Bus " << route << ": ";
 
     Bus* ptr = FindBus(route);
     
     if(ptr == nullptr)
     {
-        output << "not found\n"; 
+        return {-1, 0, 0};
     }else
     {
         double total = 0;
@@ -85,55 +68,32 @@ void TransportCatalogue::GetRouteInfo(std::string_view route, std::ostream& outp
             }
         }
         
-        output << ptr->stops.size() << " stops on route, " 
-        << std::set<Stop*>(ptr->stops.begin(), ptr->stops.end()).size() << " unique stops, "
-        << total << " route length\n";
+        return {ptr->stops.size(), std::set<Stop*>(ptr->stops.begin(), ptr->stops.end()).size(), total};
     }
 }
 
-void TransportCatalogue::GetStopInfo(std::string_view stop, std::ostream& output) const
+std::pair<bool, std::set<std::string>> TransportCatalogue::GetStopInfo(std::string_view stop) const
 {
-    output << "Stop " << stop << ": ";
-
     Stop* ptr = FindStop(stop);
     
     if(ptr == nullptr)
     {
-        output << "not found\n"; 
+        return {false, {}};
+        
     }else
     {
-        bool found = false;
         std::set<std::string> names;
+        
         for(const Bus& bus : routes_)
         {
-            
-        auto iter = std::find(bus.stops.begin(), bus.stops.end(), ptr);
-        if(iter != bus.stops.end())
-        {
-            if(!found)
+            auto iter = std::find(bus.stops.begin(), bus.stops.end(), ptr);
+            if(iter != bus.stops.end())
             {
-            output << "buses ";
-            found = true;
+                names.insert(bus.name);
             }
-            
-            names.insert(bus.name);
         }
             
-        }
-        
-        if(!found)
-        {
-        output << "no buses\n";
-        return;
-        }
-        
-        for(auto iter = names.begin(); iter != names.end(); iter++)
-        {
-            output << *iter << ' ';
-        }
-            
-        output << std::endl;
-        
+        return {true, names};
     }
 }
     }

@@ -111,27 +111,27 @@ void InputReader::ParseLine(std::string_view line) {
 void InputReader::ApplyCommands([[maybe_unused]] manager::TransportCatalogue& catalogue) const 
 {
     // Реализуйте метод самостоятельно
-    for(const CommandDescription& command : commands_)
+    for(const CommandDescription& prompt : commands_)
     {
-        if(!command)
+        if(!prompt)
             continue;
         
-        if(command.command == "Stop")
+        if(prompt.command == "Stop")
         {
-            manager::Stop tmp(command.id, ParseCoordinates(command.description));
+            manager::Stop tmp(prompt.id, ParseCoordinates(prompt.description));
             catalogue.AddStop(tmp);
         }
     }
         
-    for(const CommandDescription& command : commands_)
+    for(const CommandDescription& prompt : commands_)
     {
-        if(!command)
+        if(!prompt)
             continue;
         
-        if(command.command == "Bus")
+        if(prompt.command == "Bus")
         {
-            std::vector<std::string_view> tmp_array = ParseRoute(command.description);
-            manager::Bus tmp(command.id);
+            std::vector<std::string_view> tmp_array = ParseRoute(prompt.description);
+            manager::Bus tmp(prompt.id);
 
             for(std::string_view& stop : tmp_array)
             {
