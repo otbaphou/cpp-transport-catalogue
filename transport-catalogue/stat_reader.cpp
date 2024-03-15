@@ -16,15 +16,16 @@ std::string_view request, std::ostream& output)
            const std::string_view route = request.substr(offset, request.size()-offset);
            output << "Bus " << route << ": ";
             
-           std::tuple<int, int, double> data = transport_catalogue.GetRouteInfo(route);
+           packets::RouteInfo data = transport_catalogue.GetRouteInfo(route);
             
-           if(get<0>(data) == -1)
+           if(data.stops == -1)
            {
                output << "not found\n"; 
+               
            }else
            {
-               output << get<0>(data) << " stops on route, " << get<1>(data)
-               << " unique stops, " << get<2>(data) << " route length\n";
+               output << data.stops << " stops on route, " << data.unique_stops
+               << " unique stops, " << data.total_distance << " route length\n";
            }
            
         }
@@ -34,15 +35,15 @@ std::string_view request, std::ostream& output)
             const std::string_view stop = request.substr(offset, request.size()-offset);
             output << "Stop " << stop << ": ";
              
-            std::pair<bool, std::set<std::string>> data = transport_catalogue.GetStopInfo(stop);
+            packets::StopInfo data = transport_catalogue.GetStopInfo(stop);
             
-            if(!data.first)
+            if(!data.found)
             {
                 output << "not found\n"; 
                
             }else
             {
-                if(data.second.size() == 0)
+                if(data.names.size() == 0)
                 {
                     output << "no buses\n"; 
                     
@@ -50,7 +51,7 @@ std::string_view request, std::ostream& output)
                 {
                     output << "buses "; 
                     
-                for(auto iter = data.second.begin(); iter != data.second.end(); iter++) 
+                for(auto iter = data.names.begin(); iter != data.names.end(); iter++) 
                 { 
                     output << *iter << ' '; 
                 }

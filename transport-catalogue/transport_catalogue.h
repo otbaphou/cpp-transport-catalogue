@@ -15,6 +15,25 @@
 
 namespace catalogue
 {
+    namespace packets
+    {
+        struct StopInfo
+        {
+            StopInfo(bool found_, std::set<std::string> names_);
+            
+            bool found;
+            std::set<std::string> names;
+        };
+        
+        struct RouteInfo
+        {
+            RouteInfo(int stops_, int unique_stops_, double total_distance_);
+            
+            int stops, unique_stops;
+            double total_distance;
+        };
+    }
+    
     namespace manager
     {
   
@@ -50,8 +69,8 @@ class TransportCatalogue
     Bus* FindBus(const std::string_view key) const;
     Stop* FindStop(const std::string_view key) const;
     
-    std::tuple<int, int, double> GetRouteInfo(std::string_view route) const;
-    std::pair<bool, std::set<std::string>> GetStopInfo(std::string_view stop) const;
+    packets::RouteInfo GetRouteInfo(std::string_view route) const;
+    packets::StopInfo GetStopInfo(std::string_view stop) const;
     
     private:
     

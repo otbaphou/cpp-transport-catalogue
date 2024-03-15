@@ -2,6 +2,14 @@
 
 namespace catalogue
 {
+    namespace packets
+    {
+        StopInfo::StopInfo(bool found_, std::set<std::string> names_)
+        :found(found_), names(names_){}
+        
+        RouteInfo::RouteInfo(int stops_, int unique_stops_, double total_distance_)
+        :stops(stops_), unique_stops(unique_stops_), total_distance(total_distance_){}
+    }
     namespace manager
     {
   
@@ -41,7 +49,7 @@ Stop* TransportCatalogue::FindStop(const std::string_view key) const
     return nullptr;
 }
     
-std::tuple<int, int, double> TransportCatalogue::GetRouteInfo(std::string_view route) const
+packets::RouteInfo TransportCatalogue::GetRouteInfo(std::string_view route) const
 {
 
     Bus* ptr = FindBus(route);
@@ -68,11 +76,11 @@ std::tuple<int, int, double> TransportCatalogue::GetRouteInfo(std::string_view r
             }
         }
         
-        return {ptr->stops.size(), std::set<Stop*>(ptr->stops.begin(), ptr->stops.end()).size(), total};
+        return {(int)ptr->stops.size(), (int)std::set<Stop*>(ptr->stops.begin(), ptr->stops.end()).size(), total};
     }
 }
 
-std::pair<bool, std::set<std::string>> TransportCatalogue::GetStopInfo(std::string_view stop) const
+packets::StopInfo TransportCatalogue::GetStopInfo(std::string_view stop) const
 {
     Stop* ptr = FindStop(stop);
     
