@@ -7,8 +7,9 @@ namespace catalogue
         StopInfo::StopInfo(bool found_, std::set<std::string> names_)
         :found(found_), names(names_){}
         
-        RouteInfo::RouteInfo(int stops_, int unique_stops_, double total_distance_)
-        :stops(stops_), unique_stops(unique_stops_), total_distance(total_distance_){}
+        RouteInfo::RouteInfo(int stops_, int unique_stops_, double total_distance_, double true_total_distance_)
+        :stops(stops_), unique_stops(unique_stops_), total_distance(total_distance_),
+        true_total_distance(true_total_distance_){}
     }
     namespace manager
     {
@@ -31,6 +32,11 @@ void TransportCatalogue::AddStop(const Stop& stop)
     Stop& tmp = stops_.back();
     
     name_to_stops_.insert({tmp.name,  &tmp});
+}
+        
+void TransportCatalogue::AddDistance(const std::pair<Stop*, Stop*>& stops, const int distance)
+{
+    stop_pair_to_distance_.insert({stops, distance});
 }
 
 Bus* TransportCatalogue::FindBus(const std::string_view key) const
@@ -56,10 +62,11 @@ packets::RouteInfo TransportCatalogue::GetRouteInfo(std::string_view route) cons
     
     if(ptr == nullptr)
     {
-        return {-1, 0, 0};
+        return {-1, 0, 0, 0};
     }else
     {
         double total = 0;
+        double total_true = 0;
         
         Stop* prev = nullptr;
         for(Stop* stop : ptr->stops)
@@ -67,16 +74,26 @@ packets::RouteInfo TransportCatalogue::GetRouteInfo(std::string_view route) cons
             
             if(prev!=NULL)
             {
-                total += ComputeDistance(prev->location, stop->location);
+                if(stop_pair_to_distance_.contains({prev, stop}))
+                {
+                    total += stop_pair_to_distance_.at({prev, stop});
+                    
+                }else
+                {
+                    total += stop_pair_to_distance_.at({stop, prev});
+                }
+                
+                total_true += ComputeDistance(prev->location, stop->location);
                 
                 prev = stop;
+                
             }else
             {
                 prev = stop;
             }
         }
         
-        return {(int)ptr->stops.size(), (int)std::set<Stop*>(ptr->stops.begin(), ptr->stops.end()).size(), total};
+        return {(int)ptr->stops.size(), (int)std::set<Stop*>(ptr->stops.begin(), ptr->stops.end()).size(), total, total_true};
     }
 }
 

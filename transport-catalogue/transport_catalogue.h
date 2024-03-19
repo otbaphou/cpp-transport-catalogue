@@ -27,10 +27,12 @@ namespace catalogue
         
         struct RouteInfo
         {
-            RouteInfo(int stops_, int unique_stops_, double total_distance_);
+            RouteInfo(int stops_, int unique_stops_, double total_distance_, double true_total_distance);
             
-            int stops, unique_stops;
+            int stops;
+            int unique_stops;
             double total_distance;
+            double true_total_distance;
         };
     }
     
@@ -58,6 +60,16 @@ struct Bus
     std::vector<Stop*> stops;
 };
 
+class StopPairHasher {
+public:
+
+    size_t operator()(const std::pair<Stop*, Stop*>& pair_) const 
+    {
+        return std::hash<Stop*>{}(pair_.first) ^ std::hash<Stop*>{}(pair_.second);
+    }
+
+};
+        
 class TransportCatalogue 
 {
 	// Реализуйте класс самостоятельно
@@ -65,6 +77,8 @@ class TransportCatalogue
     
     void AddBus(const Bus& bus);
     void AddStop(const Stop& stop);
+    
+    void AddDistance(const std::pair<Stop*, Stop*>& stops, const int distance);
     
     Bus* FindBus(const std::string_view key) const;
     Stop* FindStop(const std::string_view key) const;
@@ -79,6 +93,8 @@ class TransportCatalogue
 
     std::unordered_map<std::string_view, Bus*> busname_to_bus_;
     std::deque<Bus> routes_;
+    
+    std::unordered_map<std::pair<Stop*, Stop*>, int, StopPairHasher> stop_pair_to_distance_;
 };
     }
 }

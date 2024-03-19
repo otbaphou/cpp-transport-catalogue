@@ -24,8 +24,9 @@ std::string_view request, std::ostream& output)
                
            }else
            {
-               output << data.stops << " stops on route, " << data.unique_stops
-               << " unique stops, " << data.total_distance << " route length\n";
+                output << data.stops << " stops on route, " << data.unique_stops
+                << " unique stops, " << data.total_distance << " route length, " << 
+                data.total_distance/data.true_total_distance << " curvature\n";
            }
            
         }

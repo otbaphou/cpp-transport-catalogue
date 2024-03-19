@@ -122,6 +122,30 @@ void InputReader::ApplyCommands([[maybe_unused]] manager::TransportCatalogue& ca
             catalogue.AddStop(tmp);
         }
     }
+    
+        // Реализуйте метод самостоятельно
+    for(const CommandDescription& prompt : commands_)
+    {
+        if(!prompt)
+            continue;
+        
+        if(prompt.command == "Stop")
+        {
+            std::vector<std::string_view> stuff = Split(prompt.description, ',');
+            
+            for(size_t e = 2; e < stuff.size(); ++e)
+            {
+                const int distance = std::stoi(std::string(stuff[e].substr(0, stuff[e].find('m'))));
+                                               
+                size_t offset = stuff[e].find('o') + 2;
+                manager::Stop* destination = catalogue.FindStop(stuff[e].substr(offset, stuff[e].size() - offset));
+                                               
+                catalogue.AddDistance({catalogue.FindStop(prompt.id), destination}, distance);
+            }
+            
+            
+        }
+    }
         
     for(const CommandDescription& prompt : commands_)
     {
