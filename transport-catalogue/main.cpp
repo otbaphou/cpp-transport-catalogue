@@ -1,33 +1,35 @@
+#include <fstream>
 #include <iostream>
-#include <string>
+#include "json.h"
+#include "json_reader.h"
+#include "transport_catalogue.h"
 
-#include "input_reader.h"
-#include "stat_reader.h"
+int main()
+{
+    /*
+     * Примерная структура программы:
+     *
+     * Считать JSON из stdin
+     * Построить на его основе JSON базу данных транспортного справочника
+     * Выполнить запросы к справочнику, находящиеся в массива "stat_requests", построив JSON-массив
+     * с ответами Вывести в stdout ответы в виде JSON
+     */
 
-using namespace std;
+    //std::ifstream in_file("input.json", std::ifstream::binary);
+    //std::ofstream out_file("stdout.txt", std::ofstream::binary);
 
-int main() {
+    json::Document data = json::Load(std::cin);
+
+    //Initializing Transport Catalogue
     catalogue::manager::TransportCatalogue catalogue;
 
-    int base_request_count;
-    cin >> base_request_count >> ws;
+    reader::Query query = reader::ParseRaw(data);
 
-    {
-        catalogue::in::InputReader reader;
-        for (int i = 0; i < base_request_count; ++i) {
-            string line;
-            getline(cin, line);
-            reader.ParseLine(line);
-        }
-        reader.ApplyCommands(catalogue);
-    }
+    //Initializeing Renderer
+    renderer::MapRenderer renderer(query.render_settings, catalogue);
+    handler::RequestHandler request_handler(catalogue, renderer);
 
-    int stat_request_count;
-    cin >> stat_request_count >> ws;
-    for (int i = 0; i < stat_request_count; ++i) {
-        string line;
-        getline(cin, line);
-        catalogue::out::ParseAndPrintStat(catalogue, line, cout);
-    }
-   
+    reader::ApplyCommands(catalogue, query.base_requests);
+    reader::PrintStat(catalogue, renderer, query.stat_requests, std::cout);
+
 }
