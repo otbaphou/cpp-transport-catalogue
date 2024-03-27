@@ -32,16 +32,10 @@ namespace json
         /* Реализуйте Node, используя std::variant */
         using Value = std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string>;
         Node() = default;
-
-        //Node(Value val);
-
-        Node(int val);
-        Node(double val);
-        Node(bool val);
-        Node(const std::string val);
-        Node(std::nullptr_t val);
-        Node(const Array& val);
-        Node(const Dict& val);
+        
+        template <typename T>
+        Node(T val)
+        :value_(val) {}
 
         bool IsInt() const;
         bool IsDouble() const;

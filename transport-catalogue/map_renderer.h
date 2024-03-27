@@ -21,6 +21,11 @@ namespace renderer
 
 			void AddGraphics();
 
+            void DrawRoute(const geo::SphereProjector& proj, const catalogue::manager::Bus* route_ptr);
+            void DrawStops(const geo::SphereProjector& proj, const std::vector<catalogue::manager::Stop*>& stop_arr, 
+            const std::set<catalogue::manager::Stop*>& unique_stops);
+                
+                
 			void RenderMap(std::vector<geo::Coordinates>, std::ostringstream&);
 
 			svg::Color GetColor();

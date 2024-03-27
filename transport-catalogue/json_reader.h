@@ -24,7 +24,24 @@ namespace reader{
 	};
 
 	Query ParseRaw(json::Document& doc);
-
-	void ApplyCommands(catalogue::manager::TransportCatalogue& catalogue, json::Array);
+    
+    namespace parsing
+    {
+        namespace input
+        {
+            void ParseStops(catalogue::manager::TransportCatalogue& catalogue, json::Array& commands);
+            void ParseDistance(catalogue::manager::TransportCatalogue& catalogue, json::Array& commands);
+            void ParseRoutes(catalogue::manager::TransportCatalogue& catalogue, json::Array& commands);
+        }
+        
+        namespace output
+        {
+            void InsertStopInfo(const catalogue::manager::TransportCatalogue&, const json::Dict&, json::Dict&);
+            void InsertBusInfo(const catalogue::manager::TransportCatalogue&, const json::Dict&, json::Dict&);
+            void InsertMapData(const catalogue::manager::TransportCatalogue&, renderer::MapRenderer&, const json::Dict&, json::Dict&);
+        }
+    }
+    
+	void ApplyCommands(catalogue::manager::TransportCatalogue& catalogue, json::Array&);
 	void PrintStat(const catalogue::manager::TransportCatalogue& transport_catalogue, renderer::MapRenderer& map_renderer, json::Array, std::ostream& output);
 }

@@ -4,6 +4,9 @@
 
 namespace renderer
 {
+    //Initializing stuff
+    
+    
 	MapRenderer::MapRenderer(json::Dict& raw_query, catalogue::manager::TransportCatalogue& db)
 		:db_(db){
 		SetData(raw_query);
@@ -86,7 +89,11 @@ namespace renderer
 			const svg::Point screen_coord = proj(geo_coord);
 			track.AddPoint(screen_coord);
 		}
-		routes_.push_back(std::move(track.SetStrokeWidth(line_width_).SetFillColor("none").SetStrokeLineCap(svg::StrokeLineCap::ROUND).SetStrokeLineJoin(svg::StrokeLineJoin::ROUND).SetStrokeColor(color)));
+		routes_.push_back(std::move(track.SetStrokeWidth(line_width_)
+                                    .SetFillColor("none")
+                                    .SetStrokeLineCap(svg::StrokeLineCap::ROUND)
+                                    .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND)
+                                    .SetStrokeColor(color)));
 	}
 
 	void MapRenderer::AddBusLabel(geo::Coordinates position, const geo::SphereProjector& proj, const svg::Color& color, const std::string& name)
@@ -94,11 +101,27 @@ namespace renderer
 		svg::Text label;
 		svg::Text outline;
 		const svg::Point screen_coord = proj(position);
-		label.SetPosition(screen_coord).SetOffset(bus_label_offset_).SetFontSize(bus_label_font_size_).SetFontFamily("Verdana").SetFontWeight("bold").SetData(std::move(name));
-		outline.SetPosition(screen_coord).SetOffset(bus_label_offset_).SetFontSize(bus_label_font_size_).SetFontFamily("Verdana").SetFontWeight("bold").SetData(std::move(name));
+        
+		label.SetPosition(screen_coord)
+            .SetOffset(bus_label_offset_)
+            .SetFontSize(bus_label_font_size_)
+            .SetFontFamily("Verdana")
+            .SetFontWeight("bold")
+            .SetData(std::move(name));
+        
+		outline.SetPosition(screen_coord)
+            .SetOffset(bus_label_offset_)
+            .SetFontSize(bus_label_font_size_)
+            .SetFontFamily("Verdana")
+            .SetFontWeight("bold")
+            .SetData(std::move(name));
 
-		bus_labels_.push_back(std::move(outline.SetStrokeColor(underlayer_color_).SetFillColor(underlayer_color_).SetStrokeWidth(underlayer_width_
-		).SetStrokeLineCap(svg::StrokeLineCap::ROUND).SetStrokeLineJoin(svg::StrokeLineJoin::ROUND)));
+		bus_labels_.push_back(std::move(outline.SetStrokeColor(underlayer_color_)
+                                        .SetFillColor(underlayer_color_)
+                                        .SetStrokeWidth(underlayer_width_)
+                                        .SetStrokeLineCap(svg::StrokeLineCap::ROUND)
+                                        .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND)));
+        
 		bus_labels_.push_back(std::move(label.SetFillColor(color)));
 
 	}
@@ -108,11 +131,25 @@ namespace renderer
 		svg::Text label;
 		svg::Text outline;
 		const svg::Point screen_coord = proj(position);
-		label.SetPosition(screen_coord).SetOffset(stop_label_offset_).SetFontSize(stop_label_font_size_).SetFontFamily("Verdana").SetData(std::move(name));
-		outline.SetPosition(screen_coord).SetOffset(stop_label_offset_).SetFontSize(stop_label_font_size_).SetFontFamily("Verdana").SetData(std::move(name));
+        
+		label.SetPosition(screen_coord)
+            .SetOffset(stop_label_offset_)
+            .SetFontSize(stop_label_font_size_)
+            .SetFontFamily("Verdana")
+            .SetData(std::move(name));
+        
+		outline.SetPosition(screen_coord)
+            .SetOffset(stop_label_offset_)
+            .SetFontSize(stop_label_font_size_)
+            .SetFontFamily("Verdana").
+            SetData(std::move(name));
 
-		stop_labels_.push_back(std::move(outline.SetStrokeColor(underlayer_color_).SetFillColor(underlayer_color_).SetStrokeWidth(underlayer_width_
-		).SetStrokeLineCap(svg::StrokeLineCap::ROUND).SetStrokeLineJoin(svg::StrokeLineJoin::ROUND)));
+		stop_labels_.push_back(std::move(outline.SetStrokeColor(underlayer_color_)
+                                         .SetFillColor(underlayer_color_)
+                                         .SetStrokeWidth(underlayer_width_)
+                                         .SetStrokeLineCap(svg::StrokeLineCap::ROUND)
+                                         .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND)));
+        
 		stop_labels_.push_back(std::move(label.SetFillColor("black")));
 
 	}
@@ -148,38 +185,25 @@ namespace renderer
 			document_.Add(label);
 		}
 	}
+    
+    void MapRenderer::DrawRoute(const geo::SphereProjector& proj, const catalogue::manager::Bus* route_ptr)
+    {
+        	const svg::Color c = GetColor();
+            
+			AddBusLabel(route_ptr->stops[0]->location, proj, c, route_ptr->name);
 
-	void MapRenderer::RenderMap(std::vector<geo::Coordinates> cords, std::ostringstream& output)
-	{
-
-		const geo::SphereProjector proj{ cords.begin(), cords.end(), width_, height_, padding_ };
-		auto bus_arr = db_.GetBusPointerList();
-
-		std::set<catalogue::manager::Stop*> unique_stops;
-
-
-		std::sort(bus_arr.begin(), bus_arr.end(), [](const catalogue::manager::Bus* lhs, const  catalogue::manager::Bus* rhs) {return lhs->name < rhs->name; });
-		for (const auto& route : bus_arr)
-		{
-			const svg::Color c = GetColor();
-
-			for (auto& stop : route->stops)
+			if (route_ptr->stops[0] != route_ptr->stops.back() && !route_ptr->is_roundtrip)
 			{
-				unique_stops.insert(stop);
+				AddBusLabel(route_ptr->stops.back()->location, proj, c, route_ptr->name);
 			}
 
-			AddBusLabel(route->stops[0]->location, proj, c, route->name);
-
-			if (route->stops[0] != route->stops.back() && !route->is_roundtrip)
-			{
-				AddBusLabel(route->stops.back()->location, proj, c, route->name);
-			}
-
-			AddRoute(db_.GetRouteLocations(route), proj, c);
-		}
-		auto stop_arr = db_.GetAllStops();
-		std::sort(stop_arr.begin(), stop_arr.end(), [](const catalogue::manager::Stop* lhs, const  catalogue::manager::Stop* rhs) {return lhs->name < rhs->name; });
-		for (const auto& stop : stop_arr)
+			AddRoute(db_.GetRouteLocations(route_ptr), proj, c);
+    }
+    
+    void MapRenderer::DrawStops(const geo::SphereProjector& proj, 
+    const std::vector<catalogue::manager::Stop*>& stop_arr, const std::set<catalogue::manager::Stop*>& unique_stops)
+    {
+        for (const auto& stop : stop_arr)
 		{	
 			if(unique_stops.contains(stop))
 				AddCircle(stop->location, proj);
@@ -189,6 +213,41 @@ namespace renderer
 			if (unique_stops.contains(stop))
 				AddStopLabel(stop->location, proj, stop->name);
 		}
+    }
+    
+	void MapRenderer::RenderMap(std::vector<geo::Coordinates> cords, std::ostringstream& output)
+	{
+
+		const geo::SphereProjector proj{ cords.begin(), cords.end(), width_, height_, padding_ };
+		auto bus_arr = db_.GetBusPointerList();
+
+		std::set<catalogue::manager::Stop*> unique_stops;
+
+
+		std::sort(bus_arr.begin(), bus_arr.end(), [](const catalogue::manager::Bus* lhs, const  catalogue::manager::Bus* rhs) 
+        {
+            return lhs->name < rhs->name; 
+        });
+        
+		for (const auto& route : bus_arr)
+		{
+
+			for (auto& stop : route->stops)
+			{
+				unique_stops.insert(stop);
+			}
+           
+            DrawRoute(proj, route);
+		}
+        
+		auto stop_arr = db_.GetAllStops();
+        
+		std::sort(stop_arr.begin(), stop_arr.end(), [](const catalogue::manager::Stop* lhs, const  catalogue::manager::Stop* rhs) 
+        {
+            return lhs->name < rhs->name; 
+        });
+        
+        DrawStops(proj, stop_arr,  unique_stops);
 
 		AddGraphics();
 		document_.Render(output);

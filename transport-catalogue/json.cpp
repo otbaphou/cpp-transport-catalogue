@@ -323,30 +323,6 @@ namespace json {
 
     }  // namespace
 
-    //Node::Node(Value val)
-        //:value_(std::move(val)) {}
-
-    Node::Node(int val)
-        :value_(val) {}
-
-    Node::Node(double val)
-        :value_(val) {}
-
-    Node::Node(bool val)
-        :value_(val) {}
-
-    Node::Node(const std::string val)
-        :value_(std::move(val)) {}
-
-    Node::Node(std::nullptr_t val)
-        :value_(val) {}
-
-    Node::Node(const Array& val)
-        :value_(std::move(val)) {}
-
-    Node::Node(const Dict& val)
-        :value_(std::move(val)) {}
-
     bool Node::IsInt() const
     {
         return std::holds_alternative<int>(value_);

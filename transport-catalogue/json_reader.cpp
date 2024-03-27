@@ -30,99 +30,102 @@ namespace reader
 		return query;
 	}
 
-    void ApplyCommands(catalogue::manager::TransportCatalogue& catalogue, json::Array commands)
+    namespace parsing
     {
-
-        for (const auto& prompt : commands)
+        namespace input
         {
-            const json::Dict& object = prompt.AsMap();
-            if (object.at("type").AsString() == "Stop")
+            void ParseStops(catalogue::manager::TransportCatalogue& catalogue, json::Array& commands)
             {
-                catalogue::manager::Stop tmp(object.at("name").AsString(), {object.at("latitude").AsDouble(), object.at("longitude").AsDouble()});
-                catalogue.AddStop(tmp);
+                for (const auto& prompt : commands)
+                {
+                    const json::Dict& object = prompt.AsMap();
+                    if (object.at("type").AsString() == "Stop")
+                    {
+                        catalogue::manager::Stop tmp(object.at("name").AsString(), {object.at("latitude").AsDouble(), object.at("longitude").AsDouble()});
+                        catalogue.AddStop(tmp);
+                    }
+                }
+            }
+            
+            void ParseDistance(catalogue::manager::TransportCatalogue& catalogue, json::Array& commands)
+            {
+                for (const auto& prompt : commands)
+                {
+                    const json::Dict& object = prompt.AsMap();
+                    if (object.at("type").AsString() == "Stop")
+                    {
+                        for(const auto& stop : object.at("road_distances").AsMap())
+                        {
+                            const int distance = stop.second.AsInt(); // Reading The Value From road_distances Map
+        
+                            catalogue::manager::Stop* destination = catalogue.FindStop(stop.first);
+        
+                            catalogue.AddDistance({ catalogue.FindStop(object.at("name").AsString()), destination }, distance);
+                        }
+                    }
+                }
+            }
+            
+            void ParseRoutes(catalogue::manager::TransportCatalogue& catalogue, json::Array& commands)
+            {
+                for (const auto& prompt : commands)
+                {
+                    const json::Dict& object = prompt.AsMap();
+                    if (object.at("type").AsString() == "Bus")
+                    {
+                        bool is_roundtrip = object.at("is_roundtrip").AsBool();
+                        std::vector<std::string_view> stop_array(std::move(handler::utils::ParseRoute(object.at("stops").AsArray())));
+                        catalogue::manager::Bus bus(object.at("name").AsString(), is_roundtrip);
+        
+                        for (std::string_view& stop : stop_array)
+                        {
+                            bus.stops.push_back(catalogue.FindStop(stop));
+                            bus.EndPoint.push_back(catalogue.FindStop(stop));
+                        }
+        
+                        if (!is_roundtrip && bus.EndPoint.front() == bus.EndPoint.back())
+                            bus.EndPoint.pop_back();
+        
+                        catalogue.AddBus(bus);
+                    }
+                }
             }
         }
         
-        for (const auto& prompt : commands)
+        namespace output
         {
-            const json::Dict& object = prompt.AsMap();
-            if (object.at("type").AsString() == "Stop")
-            {
-                for(const auto& stop : object.at("road_distances").AsMap())
-                {
-                    const int distance = stop.second.AsInt(); // Reading The Value From road_distances Map
-
-                    catalogue::manager::Stop* destination = catalogue.FindStop(stop.first);
-
-                    catalogue.AddDistance({ catalogue.FindStop(object.at("name").AsString()), destination }, distance);
-                }
-            }
-        }
-
-        for (const auto& prompt : commands)
-        {
-            const json::Dict& object = prompt.AsMap();
-            if (object.at("type").AsString() == "Bus")
-            {
-                bool is_roundtrip = object.at("is_roundtrip").AsBool();
-                std::vector<std::string_view> stop_array(std::move(handler::utils::ParseRoute(object.at("stops").AsArray())));
-                catalogue::manager::Bus bus(object.at("name").AsString(), is_roundtrip);
-
-                for (std::string_view& stop : stop_array)
-                {
-                    bus.stops.push_back(catalogue.FindStop(stop));
-                    bus.EndPoint.push_back(catalogue.FindStop(stop));
-                }
-
-                if (!is_roundtrip && bus.EndPoint.front() == bus.EndPoint.back())
-                    bus.EndPoint.pop_back();
-
-                catalogue.AddBus(bus);
-            }
-        }
-    }
-
-    void PrintStat(const catalogue::manager::TransportCatalogue& transport_catalogue, renderer::MapRenderer& map_renderer, json::Array arr, std::ostream& output)
-    {
-        json::Array out_array;
-
-        for (const auto& element : arr)
-        {
-            const json::Dict& query = element.AsMap();
-            json::Dict out_map;
-            if (query.at("type").AsString() == "Stop")
+            void InsertStopInfo(const catalogue::manager::TransportCatalogue& transport_catalogue, const json::Dict& query, json::Dict& out_map)
             {
                 catalogue::packets::StopInfo data = transport_catalogue.GetStopInfo(query.at("name").AsString());
 
                 if (!data.found)
                 {
                     out_map.insert({"request_id", query.at("id").AsInt()});
-         
+        
                     std::string s = "not found";
                     out_map.insert({ "error_message", std::move(s)});
                 }
                 else
                 {
-                        if (data.names.size() == 0)
+                    if (data.names.size() == 0)
+                    {
+                        out_map.insert({ "buses", json::Array{} });
+                    }
+                    else 
+                    {
+                        json::Array route_container;
+                        for (auto iter = data.names.begin(); iter != data.names.end(); iter++)
                         {
-                            out_map.insert({ "buses", json::Array{} });
+                            route_container.push_back(*iter);
                         }
-                        else 
-                        {
-
-                            json::Array route_container;
-                            for (auto iter = data.names.begin(); iter != data.names.end(); iter++)
-                            {
-                                route_container.push_back(*iter);
-                            }
-
-                            out_map.insert({ "buses", route_container });
-                        }
-                        out_map.insert({ "request_id",  query.at("id").AsInt()});
+                        
+                        out_map.insert({ "buses", route_container });
+                    }
+                    out_map.insert({ "request_id",  query.at("id").AsInt()});
                 }
             }
-
-            if (query.at("type").AsString() == "Bus")
+            
+            void InsertBusInfo(const catalogue::manager::TransportCatalogue& transport_catalogue, const json::Dict& query, json::Dict& out_map)
             {
                 catalogue::packets::RouteInfo data = transport_catalogue.GetRouteInfo(query.at("name").AsString());
 
@@ -142,8 +145,9 @@ namespace reader
                     out_map.insert({ "unique_stop_count", data.unique_stops });
                 }
             }
-
-            if (query.at("type").AsString() == "Map")
+            
+            void InsertMapData(const catalogue::manager::TransportCatalogue& transport_catalogue, 
+            renderer::MapRenderer& map_renderer, const json::Dict& query, json::Dict& out_map)
             {
                 std::string xml;
                 std::ostringstream stream;
@@ -151,6 +155,39 @@ namespace reader
                 xml = stream.str();
                 out_map.insert({"map", xml});
                 out_map.insert({ "request_id", query.at("id").AsInt() });
+            }
+        }
+    }
+    
+    void ApplyCommands(catalogue::manager::TransportCatalogue& catalogue, json::Array& commands)
+    {    
+        parsing::input::ParseStops(catalogue, commands);
+        parsing::input::ParseDistance(catalogue, commands);
+        parsing::input::ParseRoutes(catalogue, commands);
+    }
+
+    void PrintStat(const catalogue::manager::TransportCatalogue& transport_catalogue, renderer::MapRenderer& map_renderer, json::Array arr, std::ostream& output)
+    {
+        json::Array out_array;
+
+        for (const auto& element : arr)
+        {
+            const json::Dict& query = element.AsMap();
+            json::Dict out_map;
+                
+            if (query.at("type").AsString() == "Stop")
+            {
+                parsing::output::InsertStopInfo(transport_catalogue, query, out_map);
+            }
+                
+            if (query.at("type").AsString() == "Bus")
+            {
+                parsing::output::InsertBusInfo(transport_catalogue, query, out_map);
+            }
+
+            if (query.at("type").AsString() == "Map")
+            {
+                parsing::output::InsertMapData(transport_catalogue, map_renderer, query, out_map);
             }
 
             out_array.push_back(out_map);
