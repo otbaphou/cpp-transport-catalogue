@@ -8,20 +8,18 @@ namespace json
         class DictStartContext;
         class ArrayStartContext;
         class DictItemContext;
-        class DictValueContext;
-        class ArrayItemContext;
 
     public:
 
         Builder() = default;
 
-        DictItemContext Key(std::string);
+        DictItemContext Key(std::string); 
 
         DictStartContext StartDict();
-        ArrayStartContext StartArray();
+        ArrayStartContext StartArray(); 
 
-        Builder& EndDict();
-        Builder& EndArray();
+        Builder& EndDict(); 
+        Builder& EndArray(); 
 
         BaseContext Value(Node::Value val);
 
@@ -51,13 +49,13 @@ namespace json
                 builder_.key_available = true;
                 return BaseContext{ *this };
             }
-
-            DictStartContext StartDict()
+            
+            template <typename C>
+            void AddContainer(C container)
             {
-
                 if (builder_.root_.IsNull())
                 {
-                    builder_.root_.GetValue() = Dict{};
+                    builder_.root_.GetValue() = container;
                     builder_.node_stack_.push_back(&(builder_.root_));
                 }
                 else
@@ -66,46 +64,28 @@ namespace json
 
                     if (last_node->IsArray())
                     {
-                        last_node->AsArray().emplace_back(Dict{});
+                        last_node->AsArray().emplace_back(container);
                         builder_.node_stack_.push_back(&(last_node->AsArray().back()));
                     }
 
                     if (last_node->IsDict())
                     {
-                        last_node->AsDict().insert({ builder_.current_key, Dict{} });
+                        last_node->AsDict().insert({ builder_.current_key, container });
                         builder_.node_stack_.push_back(&(last_node->AsDict()[builder_.current_key]));
                         builder_.key_available = false;
                     }
                 }
+            }
+            
+            DictStartContext StartDict()
+            {
+                AddContainer(Dict{});
                 return BaseContext{ *this };
             }
 
             ArrayStartContext StartArray()
             {
-                if (builder_.root_.IsNull())
-                {
-                    builder_.root_.GetValue() = Array{};
-                    builder_.node_stack_.push_back(&(builder_.root_));
-                }
-                else
-                {
-
-                    Node* last_node = builder_.GetLastNode();
-
-                    if (last_node->IsArray())
-                    {
-                        last_node->AsArray().emplace_back(Array{});
-                        builder_.node_stack_.push_back(&(last_node->AsArray().back()));
-                    }
-
-                    if (last_node->IsDict())
-                    {
-
-                        last_node->AsDict().insert({ builder_.current_key, Array{} });
-                        builder_.node_stack_.push_back(&(last_node->AsDict()[builder_.current_key]));
-                        builder_.key_available = false;
-                    }
-                }
+                AddContainer(Array{});
                 return BaseContext{ *this };
             }
 
@@ -173,7 +153,29 @@ namespace json
 
             Node& Build() = delete;
         };
+        class ArrayItemContext : public BaseContext
+        {
+        public:
 
+            ArrayItemContext(BaseContext base)
+                :BaseContext(base) {}
+
+            DictItemContext Key(std::string) = delete;
+
+            ArrayItemContext Value(Node::Value value)
+            {
+                return BaseContext::Value(std::move(value));
+            }
+
+            //DictStartContext StartDict() = delete;
+            //ArrayStartContext StartArray() = delete;
+
+            Builder& EndDict() = delete;
+            //Builder& EndArray() = delete;
+
+
+            Node& Build() = delete;
+        };
         class ArrayStartContext : public BaseContext
         {
         public:
@@ -197,7 +199,24 @@ namespace json
 
             Node& Build() = delete;
         };
+        class DictValueContext : public BaseContext
+        {
+        public:
 
+            DictValueContext(BaseContext base)
+                :BaseContext(base) {}
+
+            BaseContext Value(Node::Value value) = delete;
+
+            DictStartContext StartDict() = delete;
+            ArrayStartContext StartArray() = delete;
+
+            //Builder& EndDict() = delete;
+            Builder& EndArray() = delete;
+
+
+            Node& Build() = delete;
+        };
         class DictItemContext : public BaseContext
         {
         public:
@@ -223,47 +242,8 @@ namespace json
             Node& Build() = delete;
         };
 
-        class DictValueContext : public BaseContext
-        {
-        public:
-
-            DictValueContext(BaseContext base)
-                :BaseContext(base) {}
-
-            BaseContext Value(Node::Value value) = delete;
-
-            DictStartContext StartDict() = delete;
-            ArrayStartContext StartArray() = delete;
-
-            //Builder& EndDict() = delete;
-            Builder& EndArray() = delete;
 
 
-            Node& Build() = delete;
-        };
 
-        class ArrayItemContext : public BaseContext
-        {
-        public:
-
-            ArrayItemContext(BaseContext base)
-                :BaseContext(base) {}
-
-            DictItemContext Key(std::string) = delete;
-
-            ArrayItemContext Value(Node::Value value)
-            {
-                return BaseContext::Value(std::move(value));
-            }
-
-            //DictStartContext StartDict() = delete;
-            //ArrayStartContext StartArray() = delete;
-
-            Builder& EndDict() = delete;
-            //Builder& EndArray() = delete;
-
-
-            Node& Build() = delete;
-        };
     };
 }

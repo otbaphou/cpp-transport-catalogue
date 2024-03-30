@@ -38,8 +38,9 @@ namespace json
 
 
 
-    Builder::DictItemContext Builder::Key(std::string)
+    Builder::DictItemContext Builder::Key(std::string str)
     {
+        BaseContext{ *this }.Key(std::move(str));
         return BaseContext{ *this };
     }
 

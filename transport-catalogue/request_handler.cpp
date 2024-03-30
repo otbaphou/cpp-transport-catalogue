@@ -28,12 +28,12 @@ namespace handler
 
                     switch (arr.size())
                     {
-                        case 3:
-                            return svg::Color{ svg::Rgb{(uint8_t)arr[0].AsInt(), (uint8_t)arr[1].AsInt(), (uint8_t)arr[2].AsInt()} };
-                            break;
-                        case 4:
-                            return svg::Color{ svg::Rgba{(uint8_t)arr[0].AsInt(), (uint8_t)arr[1].AsInt(), (uint8_t)arr[2].AsInt(), arr[3].AsDouble()} };
-                            break;
+                    case 3:
+                        return svg::Color{ svg::Rgb{(uint8_t)arr[0].AsInt(), (uint8_t)arr[1].AsInt(), (uint8_t)arr[2].AsInt()} };
+                        break;
+                    case 4:
+                        return svg::Color{ svg::Rgba{(uint8_t)arr[0].AsInt(), (uint8_t)arr[1].AsInt(), (uint8_t)arr[2].AsInt(), arr[3].AsDouble()} };
+                        break;
                     default:
                         throw std::out_of_range("Invalid Amount Of Arguments! (Color)");
                         break;
