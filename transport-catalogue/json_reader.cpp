@@ -16,8 +16,9 @@ namespace reader_debugging
 namespace reader
 {
     Query::Query() = default;
-    Query::Query(const json::Array& br, const json::Array& sr, const json::Dict& rs)
-        :base_requests(std::move(br)), stat_requests(std::move(sr)), render_settings(std::move(rs))
+    Query::Query(const json::Array& br, const json::Array& sr, const json::Dict& rs, const json::Dict& rts)
+        :base_requests(std::move(br)), stat_requests(std::move(sr)), 
+        render_settings(std::move(rs)), routing_settings(std::move(rts))
     {
     }
 
@@ -25,7 +26,8 @@ namespace reader
     {
         const json::Dict& mother_dict = doc.GetRoot().AsDict();
 
-        Query query(mother_dict.at("base_requests").AsArray(), mother_dict.at("stat_requests").AsArray(), mother_dict.at("render_settings").AsDict());
+        Query query(mother_dict.at("base_requests").AsArray(), mother_dict.at("stat_requests").AsArray(), 
+        mother_dict.at("render_settings").AsDict(), mother_dict.at("routing_settings").AsDict());
 
         return query;
     }
@@ -66,7 +68,7 @@ namespace reader
                 }
             }
 
-            void ParseRoutes(catalogue::manager::TransportCatalogue& catalogue, json::Array& commands)
+            void ParseBuses(catalogue::manager::TransportCatalogue& catalogue, json::Array& commands)
             {
                 for (const auto& prompt : commands)
                 {
@@ -126,7 +128,7 @@ namespace reader
             void InsertBusInfo(const catalogue::manager::TransportCatalogue& transport_catalogue, const json::Dict& query, json::Builder& out)
             {
                 out.StartDict();
-                catalogue::packets::RouteInfo data = transport_catalogue.GetRouteInfo(query.at("name").AsString());
+                catalogue::packets::BusInfo data = transport_catalogue.GetBusInfo(query.at("name").AsString());
 
                 if (data.stops == -1)
                 {
@@ -139,6 +141,42 @@ namespace reader
                         .Key("route_length").Value(data.total_distance).Key("stop_count").Value(data.stops)
                         .Key("unique_stop_count").Value(data.unique_stops);
                 }
+                out.EndDict();
+            }
+            
+            void InsertRouteInfo([[maybe_unused]]const catalogue::manager::TransportCatalogue& transport_catalogue, 
+            router::RouteManager& router, [[maybe_unused]] const json::Dict& query, json::Builder& out)
+            {
+                out.StartDict();
+                std::optional<graph::Router<double>::RouteInfo> data = router.GetRouteInfo(query.at("from").AsString(), query.at("to").AsString());
+
+                if(!data.has_value())
+                {
+                    out.Key("request_id").Value(query.at("id").AsInt()).Key("error_message").Value("not found");
+                }
+                else
+                {
+                    out.Key("items").StartArray();
+
+                    for (graph::EdgeId edge_id : data.value().edges)
+                    {
+                        router::Edge* edge = router.GetEdge(edge_id).get();
+                        out.StartDict().Key(edge->is_wait ? "stop_name" : "bus").Value(edge->label);
+                        
+                        if (!edge->is_wait)
+                        {
+                            out.Key("span_count").Value(edge->span);
+                        }
+
+                        out.Key("time").Value(edge->value.weight).Key("type").Value(edge->is_wait ? "Wait" : "Bus");
+
+                        out.EndDict();
+                    }
+
+                    out.EndArray();
+                    out.Key("request_id").Value(query.at("id").AsInt()).Key("total_time").Value(data.value().weight);
+                }
+
                 out.EndDict();
             }
 
@@ -163,10 +201,10 @@ namespace reader
     {
         parsing::input::ParseStops(catalogue, commands);
         parsing::input::ParseDistance(catalogue, commands);
-        parsing::input::ParseRoutes(catalogue, commands);
+        parsing::input::ParseBuses(catalogue, commands);
     }
 
-    void PrintStat(const catalogue::manager::TransportCatalogue& transport_catalogue, renderer::MapRenderer& map_renderer, json::Array arr, std::ostream& output)
+    void PrintStat(const catalogue::manager::TransportCatalogue& transport_catalogue, renderer::MapRenderer& map_renderer, router::RouteManager& router , json::Array arr, std::ostream& output)
     {
         json::Builder builder{};
         builder.StartArray();
@@ -189,6 +227,11 @@ namespace reader
             if (query.at("type").AsString() == "Map")
             {
                 parsing::output::InsertMapData(transport_catalogue, map_renderer, query, builder);
+            }
+            
+            if (query.at("type").AsString() == "Route")
+            {
+                parsing::output::InsertRouteInfo(transport_catalogue, router, query, builder);
             }
         }
         builder.EndArray();

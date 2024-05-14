@@ -26,14 +26,19 @@ namespace catalogue
             std::set<std::string> names;
         };
 
-        struct RouteInfo
+        struct BusInfo
         {
-            RouteInfo(int stops_, int unique_stops_, double total_distance_, double true_total_distance);
+            BusInfo(int stops_, int unique_stops_, double total_distance_, double true_total_distance);
 
             int stops;
             int unique_stops;
             double total_distance;
             double true_total_distance;
+        };
+
+        struct RouteInfo
+        {
+            //RouteInfo(manager::Stop* from, manager::Stop* to, )
         };
     }
 
@@ -82,6 +87,7 @@ namespace catalogue
             void AddStop(const Stop& stop);
 
             void AddDistance(const std::pair<Stop*, Stop*>& stops, const int distance);
+            int GetDistance(std::pair<Stop*, Stop*>) const;
 
             Bus* FindBus(const std::string_view key) const;
             Stop* FindStop(const std::string_view key) const;
@@ -89,11 +95,11 @@ namespace catalogue
 
             std::vector<Bus*> GetBusPointerList() const;
 
-            std::vector<geo::Coordinates> GetRouteLocations(const Bus* route) const;
+            std::vector<geo::Coordinates> GetBusLocations(const Bus* route) const;
             std::vector<geo::Coordinates> GetAllStopsLocations() const;
             std::vector<Stop*> GetAllStops() const;
 
-            packets::RouteInfo GetRouteInfo(std::string_view route) const;
+            packets::BusInfo GetBusInfo(std::string_view route) const;
             packets::StopInfo GetStopInfo(std::string_view stop) const;
 
         private:
@@ -102,7 +108,7 @@ namespace catalogue
             std::unordered_map<std::string_view, Stop*> name_to_stops_;
 
             std::unordered_map<std::string_view, Bus*> busname_to_bus_;
-            std::deque<Bus> routes_;
+            std::deque<Bus> buses_;
 
             std::unordered_map<std::pair<Stop*, Stop*>, int, StopPairHasher> stop_pair_to_distance_;
         };

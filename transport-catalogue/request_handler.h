@@ -2,6 +2,7 @@
 #include "transport_catalogue.h"
 #include "json.h"
 #include "map_renderer.h"
+#include "transport_router.h"
 
 /*
  * Здесь можно было бы разместить код обработчика запросов к базе, содержащего логику, которую не
@@ -23,7 +24,7 @@ namespace handler
     {
     public:
 
-        RequestHandler(const catalogue::manager::TransportCatalogue& db, const renderer::MapRenderer& renderer);
+        RequestHandler(const catalogue::manager::TransportCatalogue&, const renderer::MapRenderer&);
 
     private:
         // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"

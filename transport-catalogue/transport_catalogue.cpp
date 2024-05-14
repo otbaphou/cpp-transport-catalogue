@@ -7,7 +7,7 @@ namespace catalogue
         StopInfo::StopInfo(bool found_, std::set<std::string> names_)
             :found(found_), names(names_) {}
 
-        RouteInfo::RouteInfo(int stops_, int unique_stops_, double total_distance_, double true_total_distance_)
+        BusInfo::BusInfo(int stops_, int unique_stops_, double total_distance_, double true_total_distance_)
             :stops(stops_), unique_stops(unique_stops_), total_distance(total_distance_),
             true_total_distance(true_total_distance_) {}
     }
@@ -20,8 +20,8 @@ namespace catalogue
 
         void TransportCatalogue::AddBus(const Bus& bus)
         {
-            routes_.push_back(std::move(bus));
-            Bus& tmp = routes_.back();
+            buses_.push_back(std::move(bus));
+            Bus& tmp = buses_.back();
 
             busname_to_bus_.insert({ tmp.name, &tmp });
         }
@@ -37,6 +37,25 @@ namespace catalogue
         void TransportCatalogue::AddDistance(const std::pair<Stop*, Stop*>& stops, const int distance)
         {
             stop_pair_to_distance_.insert({ stops, distance });
+        }
+
+        int TransportCatalogue::GetDistance(std::pair<Stop*, Stop*> stops) const
+        {
+            if (stop_pair_to_distance_.contains(stops))
+            {
+                return stop_pair_to_distance_.at(stops);
+            }
+            else
+            {
+                if (stop_pair_to_distance_.contains({ stops.second, stops.first }))
+                {
+                    return stop_pair_to_distance_.at({ stops.second, stops.first });
+                }
+                else
+                {
+                    return -1;
+                }
+            }
         }
 
         Bus* TransportCatalogue::FindBus(const std::string_view key) const
@@ -55,7 +74,7 @@ namespace catalogue
                 return nullptr;
         }
 
-        packets::RouteInfo TransportCatalogue::GetRouteInfo(std::string_view route) const
+        packets::BusInfo TransportCatalogue::GetBusInfo(std::string_view route) const
         {
 
             Bus* ptr = FindBus(route);
@@ -134,7 +153,7 @@ namespace catalogue
             }
         }
 
-        std::vector<geo::Coordinates> TransportCatalogue::GetRouteLocations(const Bus* route) const
+        std::vector<geo::Coordinates> TransportCatalogue::GetBusLocations(const Bus* route) const
         {
             std::vector<geo::Coordinates> points_raw;
 
@@ -158,7 +177,7 @@ namespace catalogue
         {
             std::vector<Bus*> ptr_list;
 
-            for (const Bus& bus : routes_)
+            for (const Bus& bus : buses_)
             {
                 ptr_list.push_back(busname_to_bus_.at(bus.name));
             }
@@ -179,7 +198,7 @@ namespace catalogue
             {
                 std::set<std::string> names;
 
-                for (const Bus& bus : routes_)
+                for (const Bus& bus : buses_)
                 {
                     auto iter = std::find(bus.stops.begin(), bus.stops.end(), ptr);
                     if (iter != bus.stops.end())
@@ -196,7 +215,7 @@ namespace catalogue
         {
             std::vector<geo::Coordinates> points_raw;
 
-            for(const Bus& bus : routes_)
+            for(const Bus& bus : buses_)
             {
                 for (catalogue::manager::Stop* stop : bus.stops)
                 {

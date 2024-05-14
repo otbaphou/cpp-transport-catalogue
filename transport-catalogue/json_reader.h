@@ -17,11 +17,12 @@ namespace reader {
     struct Query
     {
         Query();
-        Query(const json::Array&, const json::Array&, const json::Dict&);
+        Query(const json::Array&, const json::Array&, const json::Dict&, const json::Dict&);
 
         json::Array base_requests;
         json::Array stat_requests;
         json::Dict render_settings;
+        json::Dict routing_settings;
     };
 
     Query ParseRaw(json::Document& doc);
@@ -44,5 +45,5 @@ namespace reader {
     }
 
     void ApplyCommands(catalogue::manager::TransportCatalogue& catalogue, json::Array&);
-    void PrintStat(const catalogue::manager::TransportCatalogue& transport_catalogue, renderer::MapRenderer& map_renderer, json::Array, std::ostream& output);
+    void PrintStat(const catalogue::manager::TransportCatalogue& transport_catalogue, renderer::MapRenderer& map_renderer, router::RouteManager& router, json::Array, std::ostream& output);
 }

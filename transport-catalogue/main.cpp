@@ -3,6 +3,7 @@
 #include "json.h"
 #include "json_reader.h"
 #include "transport_catalogue.h"
+#include "transport_router.h"
 
 int main()
 {
@@ -14,9 +15,6 @@ int main()
      * Выполнить запросы к справочнику, находящиеся в массива "stat_requests", построив JSON-массив
      * с ответами Вывести в stdout ответы в виде JSON
      */
-
-    //std::ifstream in_file("input.json", std::ifstream::binary);
-    //std::ofstream out_file("stdout.txt", std::ofstream::binary);
 
     json::Document data = json::Load(std::cin);
 
@@ -30,6 +28,8 @@ int main()
     handler::RequestHandler request_handler(catalogue, renderer);
 
     reader::ApplyCommands(catalogue, query.base_requests);
-    reader::PrintStat(catalogue, renderer, query.stat_requests, std::cout);
+    router::RouteManager router(query.routing_settings, catalogue);
+
+    reader::PrintStat(catalogue, renderer, router, query.stat_requests, std::cout);
 
 }

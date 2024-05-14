@@ -197,7 +197,7 @@ namespace renderer
 			AddBusLabel(route_ptr->stops.back()->location, proj, c, route_ptr->name);
 		}
 
-		AddRoute(db_.GetRouteLocations(route_ptr), proj, c);
+		AddRoute(db_.GetBusLocations(route_ptr), proj, c);
 	}
 
 	void MapRenderer::DrawStops(const geo::SphereProjector& proj,
